@@ -14,12 +14,14 @@ limitations under the License.
 package driver
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"reflect"
 	"testing"
 
 	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	rspb "helm.sh/helm/v3/pkg/release"
 )
@@ -45,7 +47,13 @@ func TestSecretGet(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to get release: %s", err)
 	}
+	// compare release labels from secret labels
+	obj, _ := secrets.impl.Get(context.Background(), key, metav1.GetOptions{})
+	if !reflect.DeepEqual(obj.Labels, got.Labels) {
+		t.Errorf("Expected {%v}, got {%v}", rel, got)
+	}
 	// compare fetched release with original
+	rel.Labels = obj.Labels
 	if !reflect.DeepEqual(rel, got) {
 		t.Errorf("Expected {%v}, got {%v}", rel, got)
 	}
@@ -78,6 +86,8 @@ func TestUNcompressedSecretGet(t *testing.T) {
 		t.Fatalf("Failed to get release: %s", err)
 	}
 	// compare fetched release with original
+	// ignore got.labels for this testcase
+	got.Labels = nil
 	if !reflect.DeepEqual(rel, got) {
 		t.Errorf("Expected {%v}, got {%v}", rel, got)
 	}
@@ -175,6 +185,8 @@ func TestSecretCreate(t *testing.T) {
 	}
 
 	// compare created release with original
+	// ignore got.labels for this testcase
+	got.Labels = nil
 	if !reflect.DeepEqual(rel, got) {
 		t.Errorf("Expected {%v}, got {%v}", rel, got)
 	}
@@ -229,6 +241,8 @@ func TestSecretDelete(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to delete release with key %q: %s", key, err)
 	}
+	// ignore got.labels for this testcase
+	rls.Labels = nil
 	if !reflect.DeepEqual(rel, rls) {
 		t.Errorf("Expected {%v}, got {%v}", rel, rls)
 	}
